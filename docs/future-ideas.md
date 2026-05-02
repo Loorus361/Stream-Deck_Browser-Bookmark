@@ -119,7 +119,66 @@ Moegliche Verbesserungen:
 - Domain optional klein anzeigen
 - Sammlungstitel oder Slotnummer optional anzeigen
 
-## Idee 5: Daten-Export und Backup
+## Idee 5: YouTube-Links in Firefox oeffnen
+
+Motivation:
+
+YouTube soll optional in Firefox laufen, auch wenn der Link urspruenglich aus Chrome oder Safari gespeichert wurde.
+
+Moegliches Verhalten:
+
+- Beim Oeffnen eines belegten Slots prueft das Plugin die URL.
+- URLs von `youtube.com` und `youtu.be` werden in Firefox geoeffnet.
+- Andere URLs nutzen weiter den gespeicherten Browser (`chrome` oder `safari`).
+
+Wichtige Einschraenkung:
+
+- Firefox kann auf macOS nicht so zuverlaessig per AppleScript gelesen und durchsucht werden wie Chrome oder Safari.
+- Deshalb waere v1 eher `in Firefox oeffnen`, nicht zwingend `vorhandenen Firefox-Tab finden und fokussieren`.
+
+Technische Notizen:
+
+- Firefox kann URLs grundsaetzlich per macOS/Open-Mechanismus oder Kommandozeile oeffnen.
+- Routing-Regel sollte zentral im Browser-Router liegen, nicht direkt in der Tastenlogik.
+- Die gespeicherte Bookmark-Datei muss dafuer nicht geaendert werden.
+
+Empfohlener Ansatz:
+
+- Erst nur YouTube-Domains zu Firefox routen.
+- Exaktes Firefox-Tab-Fokussieren nicht versprechen.
+
+## Idee 6: Firefox spaeter als Speicherquelle
+
+Motivation:
+
+Firefox soll eventuell spaeter ebenfalls zum Speichern neuer Slots nutzbar sein.
+
+Problem:
+
+- Firefox bietet auf macOS offenbar keine robuste AppleScript-Schnittstelle fuer aktiven Tab, URL und Titel.
+- Ein gleichwertiges Verhalten zu Chrome/Safari ist deshalb nicht ohne weiteres machbar.
+
+Moegliche Zwischenablage-Variante:
+
+- Wenn Firefox im Vordergrund ist, liest das Plugin nicht Firefox direkt.
+- Stattdessen wird eine URL aus der Zwischenablage gespeichert.
+- Gespeichert wird nur, wenn die Zwischenablage eine gueltige `http`- oder `https`-URL enthaelt.
+- Wenn keine gueltige URL in der Zwischenablage liegt, wird nichts gespeichert und `showAlert` angezeigt.
+
+Offene Produktfragen:
+
+- Soll das Plugin die Zwischenablage nur lesen oder vorher per Tastenkombination `Cmd+L`, `Cmd+C` selbst die URL kopieren?
+- Darf das Plugin die Zwischenablage ueberschreiben und danach wiederherstellen?
+- Reicht es, wenn Carlos die Firefox-URL vorher bewusst selbst kopiert?
+- Soll fuer gespeicherte Firefox-Links nur `oeffnen` gelten, ohne vorhandene Tabs zu fokussieren?
+
+Empfohlener Ansatz:
+
+- Nicht als stillen Standard bauen.
+- Wenn ueberhaupt, dann als bewusstes Spezialverhalten fuer Firefox.
+- Vor Umsetzung zuerst mit einem kleinen technischen Proof of Concept testen.
+
+## Idee 7: Daten-Export und Backup
 
 Status:
 
