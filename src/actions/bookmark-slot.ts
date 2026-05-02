@@ -4,7 +4,7 @@
  * Responsibilities:
  * - assign and remember the key's slot number
  * - distinguish short press from 1-second long press
- * - save an active Chrome tab into an empty slot
+ * - save an active browser tab into an empty slot
  * - open/focus a stored URL from a filled slot
  * - delete a slot on long press
  * - refresh every visible key that points at the same slot
@@ -23,9 +23,9 @@ import streamDeck, {
   type WillDisappearEvent
 } from "@elgato/streamdeck";
 
-import { CHROME_FALLBACK_ICON } from "../assets.js";
+import { GENERIC_FALLBACK_ICON } from "../assets.js";
 import type { BookmarkStore, BookmarkSlot } from "../bookmarks/store.js";
-import { getActiveChromeTab, openOrFocusChromeUrl } from "../browser/chrome.js";
+import { getActiveBrowserTab, openOrFocusBookmarkUrl } from "../browser/browser-router.js";
 import { createFaviconService } from "../favicon/favicon.js";
 import { logMessage } from "../logging/log.js";
 import {
@@ -58,7 +58,7 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
   private readonly pressedAt = new Map<string, number>();
   private readonly store: BookmarkStore;
   private readonly faviconService = createFaviconService({
-    chromeFallbackDataUrl: CHROME_FALLBACK_ICON,
+    fallbackDataUrl: GENERIC_FALLBACK_ICON,
     log: (message) => logMessage(message, "error")
   });
 
@@ -111,11 +111,11 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
 
       const bookmark = await this.store.getBookmark(slot);
       if (bookmark) {
-        await openOrFocusChromeUrl(bookmark.url);
+        await openOrFocusBookmarkUrl({ browser: bookmark.browser, url: bookmark.url });
         return;
       }
 
-      await this.saveActiveChromeTab(slot);
+      await this.saveActiveBrowserTab(slot);
     } catch (error) {
       await logMessage(`Slot ${slot} action failed: ${error instanceof Error ? error.message : String(error)}`, "error");
       await ev.action.showAlert();
@@ -227,8 +227,8 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
     return this.visibleActions.get(actionId)?.slot ?? normalizeSettings(rawSettings).slot;
   }
 
-  private async saveActiveChromeTab(slot: number): Promise<void> {
-    const tab = await getActiveChromeTab();
+  private async saveActiveBrowserTab(slot: number): Promise<void> {
+    const tab = await getActiveBrowserTab();
     const favicon = await this.faviconService.fetchFavicon(tab.url);
     const now = new Date().toISOString();
 
@@ -236,7 +236,7 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
       slot,
       url: tab.url,
       title: tab.title || tab.url,
-      browser: "chrome",
+      browser: tab.browser,
       faviconDataUrl: favicon.dataUrl,
       faviconSource: favicon.source,
       createdAt: now,

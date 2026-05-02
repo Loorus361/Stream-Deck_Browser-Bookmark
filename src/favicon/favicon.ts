@@ -3,7 +3,7 @@
  *
  * V1 uses Google's favicon endpoint for normal http/https hostnames because it
  * is simple and reliable enough for a local tool. Internal URLs, localhost,
- * file URLs, and failed downloads fall back to the bundled Chrome icon.
+ * file URLs, and failed downloads fall back to the bundled generic icon.
  */
 import { Buffer } from "node:buffer";
 
@@ -14,11 +14,20 @@ export type FaviconResult = {
   source: FaviconSource;
 };
 
-export type FaviconServiceOptions = {
-  chromeFallbackDataUrl: string;
+type FaviconServiceSharedOptions = {
   fetch?: typeof fetch;
   log?: (message: string) => void | Promise<void>;
 };
+
+export type FaviconServiceOptions =
+  | (FaviconServiceSharedOptions & {
+      fallbackDataUrl: string;
+      chromeFallbackDataUrl?: string;
+    })
+  | (FaviconServiceSharedOptions & {
+      fallbackDataUrl?: string;
+      chromeFallbackDataUrl: string;
+    });
 
 export function getFaviconServiceUrl(url: string): string | undefined {
   let parsed: URL;
@@ -38,24 +47,25 @@ export function getFaviconServiceUrl(url: string): string | undefined {
 export function createFaviconService(options: FaviconServiceOptions) {
   const fetchImpl = options.fetch ?? globalThis.fetch;
   const log = options.log ?? (() => undefined);
+  const fallbackDataUrl = getFallbackDataUrl(options);
 
   async function fetchFavicon(url: string): Promise<FaviconResult> {
     const faviconUrl = getFaviconServiceUrl(url);
     if (!faviconUrl) {
-      return chromeFallback(options.chromeFallbackDataUrl);
+      return fallback(fallbackDataUrl);
     }
 
     try {
       const response = await fetchImpl(faviconUrl);
       if (!response.ok) {
         await log(`Favicon download failed with HTTP ${response.status} for ${url}`);
-        return chromeFallback(options.chromeFallbackDataUrl);
+        return fallback(fallbackDataUrl);
       }
 
       const bytes = Buffer.from(await response.arrayBuffer());
       if (bytes.length === 0) {
         await log(`Favicon download returned empty response for ${url}`);
-        return chromeFallback(options.chromeFallbackDataUrl);
+        return fallback(fallbackDataUrl);
       }
 
       const contentType = response.headers.get("content-type") || "image/png";
@@ -65,16 +75,28 @@ export function createFaviconService(options: FaviconServiceOptions) {
       };
     } catch (error) {
       await log(`Favicon download failed for ${url}: ${error instanceof Error ? error.message : String(error)}`);
-      return chromeFallback(options.chromeFallbackDataUrl);
+      return fallback(fallbackDataUrl);
     }
   }
 
   return { fetchFavicon };
 }
 
-function chromeFallback(dataUrl: string): FaviconResult {
+function fallback(dataUrl: string): FaviconResult {
   return {
     dataUrl,
     source: "chrome"
   };
+}
+
+function getFallbackDataUrl(options: FaviconServiceOptions): string {
+  if (options.fallbackDataUrl !== undefined) {
+    return options.fallbackDataUrl;
+  }
+
+  if (options.chromeFallbackDataUrl !== undefined) {
+    return options.chromeFallbackDataUrl;
+  }
+
+  throw new Error("Missing favicon fallback data URL");
 }

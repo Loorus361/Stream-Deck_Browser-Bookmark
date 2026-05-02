@@ -3,7 +3,7 @@
   "UUID": "com.carlosanderssohn.bookmark-slots",
   "Name": "Bookmark Slots",
   "Author": "Carlos Anderssohn",
-  "Description": "Local Chrome bookmark slots for Stream Deck.",
+  "Description": "Local browser bookmark slots for Stream Deck.",
   "Icon": "assets/plugin-icon",
   "Category": "Bookmark Slots",
   "CategoryIcon": "assets/category-icon",
@@ -36,7 +36,7 @@
         }
       ],
       "SupportedInMultiActions": false,
-      "Tooltip": "Save or open a Chrome bookmark slot.",
+      "Tooltip": "Save or open a browser bookmark slot.",
       "UserTitleEnabled": false
     }
   ]

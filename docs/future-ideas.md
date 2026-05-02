@@ -6,16 +6,16 @@ Diese Datei sammelt Ideen aus dem Chat, ohne sie schon als beschlossenes Verhalt
 
 Motivation:
 
-Carlos hat oft viele Chrome-Tabs offen.
+Carlos hat oft viele Browser-Tabs offen.
 Ein Doppelklick auf einen leeren oder speziellen Slot koennte den aktuellen Tab speichern und direkt schliessen.
 
 Moegliches Verhalten:
 
 - Doppelklick auf leeren Slot:
-  - aktive Chrome-URL und Tab-Titel speichern
+  - aktive Chrome-/Safari-URL und Tab-Titel speichern
   - Favicon laden
   - Button aktualisieren
-  - gespeicherten Chrome-Tab schliessen
+  - gespeicherten Browser-Tab schliessen
 - Doppelklick auf belegten Slot:
   - noch offen zu klaeren
 
@@ -24,7 +24,7 @@ Offene Produktfragen:
 - Soll Doppelklick nur bei leeren Slots wirken?
 - Was passiert bei belegten Slots?
 - Soll Schliessen rueckgaengig machbar sein?
-- Reicht ein `showAlert`, wenn Chrome nicht gelesen werden kann?
+- Reicht ein `showAlert`, wenn kein unterstuetzter Browser gelesen werden kann?
 
 Technische Notizen:
 
@@ -94,18 +94,16 @@ Empfohlener naechster Schritt:
 
 Status:
 
-- In der Datenstruktur vorbereitet (`browser`).
-- Noch nicht gebaut.
+- Gebaut fuer den normalen Slot-Pfad.
+- Der gespeicherte Browser bleibt pro Slot erhalten (`chrome` oder `safari`).
 
-Warum einfacher als Firefox:
+Warum Safari unterstuetzt ist und Firefox nicht geplant ist:
 
 - Safari ist auf macOS per AppleScript besser steuerbar als Firefox.
 
 Offene Fragen:
 
-- Pro Slot Browser speichern?
-- Globale Browser-Auswahl?
-- Beim Speichern erkennen, ob Chrome oder Safari vorn ist?
+- Soll es spaeter eine sichtbare Browser-Anzeige im Einstellungsbereich geben?
 
 ## Idee 4: bessere Titel
 

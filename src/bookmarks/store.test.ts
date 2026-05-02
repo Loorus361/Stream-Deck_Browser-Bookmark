@@ -36,6 +36,29 @@ test("setBookmark writes a slot and deleteBookmark removes only that slot", asyn
   assert.equal((await store.getBookmark(2))?.url, "https://example.com/2");
 });
 
+test("load keeps Safari bookmarks as valid slots", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-02T12:00:00.000Z" });
+  const safariBookmark: BookmarkSlot = {
+    ...exampleBookmark(3),
+    browser: "safari"
+  };
+
+  await writeFile(path.join(dataDir, "bookmarks.json"), JSON.stringify({
+    version: 1,
+    slots: {
+      "3": safariBookmark
+    }
+  }), "utf8");
+
+  assert.deepEqual(await store.load(), {
+    version: 1,
+    slots: {
+      "3": safariBookmark
+    }
+  });
+});
+
 test("corrupt JSON is backed up and replaced with an empty store", async () => {
   const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
   const logs: string[] = [];
@@ -179,6 +202,29 @@ test("import replaces the store after creating a backup", async () => {
     version: 1,
     slots: {
       "1": exampleBookmark(1)
+    }
+  });
+});
+
+test("import accepts Safari bookmarks", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-02T12:00:00.000Z" });
+  const safariBookmark: BookmarkSlot = {
+    ...exampleBookmark(4),
+    browser: "safari"
+  };
+
+  await store.importJson(JSON.stringify({
+    version: 1,
+    slots: {
+      "4": safariBookmark
+    }
+  }));
+
+  assert.deepEqual(await store.load(), {
+    version: 1,
+    slots: {
+      "4": safariBookmark
     }
   });
 });

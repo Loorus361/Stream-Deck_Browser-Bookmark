@@ -1,10 +1,10 @@
 # Bookmark Slots
 
-Lokales Stream-Deck-Plugin fuer Chrome-Bookmark-Slots.
+Lokales Stream-Deck-Plugin fuer Chrome- und Safari-Bookmark-Slots.
 
 ## Nutzung
 
-- kurzer Druck: leeren Slot speichern oder gespeicherten Link oeffnen/fokussieren
+- kurzer Druck: leeren Slot aus dem vorderen Chrome-/Safari-Tab speichern oder gespeicherten Link oeffnen/fokussieren
 - 1 Sekunde halten: Slot loeschen
 - Einstellungen: Slotnummer, URL-Anzeige, Titel
 - Backup/Export/Import im Einstellungsbereich:

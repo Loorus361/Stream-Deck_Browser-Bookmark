@@ -13,11 +13,11 @@ Der eigentliche Bookmark liegt zentral in einer JSON-Datei.
 flowchart TD
   A["Stream Deck Taste"] --> B["src/actions/bookmark-slot.ts"]
   B --> C{"Slot belegt?"}
-  C -->|Nein, kurzer Druck| D["src/browser/chrome.ts liest aktiven Chrome-Tab"]
+  C -->|Nein, kurzer Druck| D["src/browser/browser-router.ts liest aktiven Chrome-/Safari-Tab"]
   D --> E["src/favicon/favicon.ts laedt Favicon"]
   E --> F["src/bookmarks/store.ts speichert JSON"]
   F --> G["src/render/button-image.ts erzeugt Buttonbild"]
-  C -->|Ja, kurzer Druck| H["Chrome: vorhandenen Tab fokussieren oder URL oeffnen"]
+  C -->|Ja, kurzer Druck| H["Gespeicherten Browser: vorhandenen Tab fokussieren oder URL oeffnen"]
   B -->|langer Druck| I["Slot loeschen"]
   I --> G
 ```
@@ -138,21 +138,25 @@ Exporte werden bewusst in den Downloads-Ordner geschrieben:
 
 Vor jedem erfolgreichen Import wird automatisch ein Backup der bisherigen `bookmarks.json` erstellt. Import-Dateien muessen dem aktuellen JSON-Format entsprechen; ungueltige Dateien ersetzen die bestehenden Daten nicht.
 
-## Chrome-Steuerung
+## Browser-Steuerung
 
 ```text
+src/browser/browser-router.ts
 src/browser/chrome.ts
+src/browser/safari.ts
+src/browser/frontmost.ts
 ```
 
 Das Plugin nutzt `osascript` per `execFile`, nicht per Shell-String.
+Der Router erkennt, ob Chrome oder Safari vorn ist, und speichert diesen Browser pro Bookmark.
 
 Funktionen:
 
-- `getActiveChromeTab()`: liest URL und Tab-Titel aus dem vordersten Chrome-Fenster.
-- `openOrFocusChromeUrl(url)`: sucht exakt dieselbe URL in Chrome; wenn vorhanden, springt es zum ersten Treffer; sonst oeffnet es einen neuen Tab.
+- `getActiveBrowserTab()`: liest URL, Tab-Titel und Browser aus dem vordersten unterstuetzten Browser.
+- `openOrFocusBookmarkUrl({ browser, url })`: sucht exakt dieselbe URL im gespeicherten Browser; wenn vorhanden, springt es zum ersten Treffer; sonst oeffnet es einen neuen Tab.
 
-Wenn Chrome beim Speichern geschlossen ist, wird nichts gespeichert und Stream Deck zeigt `showAlert`.
-Wenn Chrome beim Oeffnen eines belegten Slots geschlossen ist, wird Chrome gestartet und die URL geoeffnet.
+Wenn beim Speichern weder Chrome noch Safari vorn ist, wird nichts gespeichert und Stream Deck zeigt `showAlert`.
+Beim Oeffnen nutzt der Slot den gespeicherten Browser. Bestehende Chrome-Bookmarks bleiben Chrome-Bookmarks.
 
 ## Buttonbild
 
@@ -195,7 +199,7 @@ Fallback:
 - `localhost`
 - fehlgeschlagener Download
 
-nutzen das interne Chrome-Fallback-Icon.
+nutzen das interne generische Fallback-Icon. Der gespeicherte `faviconSource`-Wert kann aus Kompatibilitaetsgruenden weiterhin `chrome` sein.
 
 ## Property Inspector
 

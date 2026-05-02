@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { createFaviconService, getFaviconServiceUrl } from "./favicon.js";
 
-const chromeFallback = "data:image/svg+xml;base64,chrome";
+const genericFallback = "data:image/svg+xml;base64,generic";
 
 test("getFaviconServiceUrl builds Google favicon URL for normal hostnames", () => {
   assert.equal(
@@ -17,16 +17,16 @@ test("getFaviconServiceUrl returns undefined for internal URLs", () => {
   assert.equal(getFaviconServiceUrl("file:///tmp/example.html"), undefined);
 });
 
-test("favicon service returns Chrome fallback when fetch fails", async () => {
+test("favicon service returns generic fallback when fetch fails", async () => {
   const service = createFaviconService({
-    chromeFallbackDataUrl: chromeFallback,
+    fallbackDataUrl: genericFallback,
     fetch: async () => {
       throw new Error("network down");
     }
   });
 
   assert.deepEqual(await service.fetchFavicon("https://example.com"), {
-    dataUrl: chromeFallback,
+    dataUrl: genericFallback,
     source: "chrome"
   });
 });
