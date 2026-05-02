@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "UUID": "com.carlosanderssohn.bookmark-slots",
+  "Name": "Bookmark Slots",
+  "Author": "Carlos Anderssohn",
+  "Description": "Local Chrome bookmark slots for Stream Deck.",
+  "Icon": "assets/plugin-icon",
+  "Category": "Bookmark Slots",
+  "CategoryIcon": "assets/category-icon",
+  "CodePath": "bin/plugin.js",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "13"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "SDKVersion": 3,
+  "Version": "0.1.0.0",
+  "Actions": [
+    {
+      "UUID": "com.carlosanderssohn.bookmark-slots.bookmark-slot",
+      "Name": "Bookmark Slot",
+      "Icon": "assets/bookmark-slot",
+      "Controllers": ["Keypad"],
+      "PropertyInspectorPath": "ui/bookmark-slot.html",
+      "States": [
+        {
+          "Image": "assets/bookmark-slot",
+          "Title": ""
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "Save or open a Chrome bookmark slot.",
+      "UserTitleEnabled": false
+    }
+  ]
+}

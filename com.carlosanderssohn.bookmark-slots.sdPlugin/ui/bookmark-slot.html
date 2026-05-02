@@ -1,0 +1,133 @@
+<!doctype html>
+<!--
+  Property Inspector for the Bookmark Slot action.
+
+  Shows and edits only per-key slot settings directly. URL and title override
+  data is requested from the plugin runtime because the canonical bookmark data
+  lives in ~/.streamdeck-bookmarks/bookmarks.json.
+-->
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #1f1f1f;
+        color: #f5f5f5;
+        font-size: 13px;
+      }
+
+      label {
+        display: block;
+        margin: 0 0 12px;
+      }
+
+      span {
+        display: block;
+        margin-bottom: 5px;
+        color: #bdbdbd;
+      }
+
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #4a4a4a;
+        border-radius: 6px;
+        background: #101010;
+        color: #fff;
+        padding: 7px 8px;
+        font: inherit;
+      }
+
+      input[readonly] {
+        color: #bdbdbd;
+      }
+    </style>
+  </head>
+  <body>
+    <label>
+      <span>Slotnummer</span>
+      <input id="slot" type="number" min="1" step="1" />
+    </label>
+
+    <label>
+      <span>URL</span>
+      <input id="url" type="text" readonly />
+    </label>
+
+    <label>
+      <span>Titel</span>
+      <input id="titleOverride" type="text" />
+    </label>
+
+    <script>
+      let websocket;
+      let uuid;
+      let context;
+      let action;
+      let settings = {};
+
+      const slotInput = document.getElementById("slot");
+      const urlInput = document.getElementById("url");
+      const titleOverrideInput = document.getElementById("titleOverride");
+
+      function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
+        uuid = inPropertyInspectorUUID;
+        const actionInfo = JSON.parse(inActionInfo);
+        context = actionInfo.context;
+        action = actionInfo.action;
+
+        websocket = new WebSocket(`ws://127.0.0.1:${inPort}`);
+        websocket.onopen = () => {
+          websocket.send(JSON.stringify({ event: inRegisterEvent, uuid }));
+          websocket.send(JSON.stringify({ event: "getSettings", action, context }));
+          sendToPlugin({ type: "getSlotDetails" });
+        };
+
+        websocket.onmessage = (event) => {
+          const message = JSON.parse(event.data);
+          if (message.event === "didReceiveSettings") {
+            settings = message.payload.settings || {};
+            if (Number.isInteger(settings.slot) && settings.slot > 0) {
+              slotInput.value = String(settings.slot);
+            }
+            sendToPlugin({ type: "getSlotDetails" });
+          }
+
+          if (message.event === "sendToPropertyInspector" && message.payload?.type === "slotDetails") {
+            slotInput.value = String(message.payload.slot || settings.slot || "");
+            urlInput.value = message.payload.url || "";
+            titleOverrideInput.value = message.payload.titleOverride || message.payload.title || "";
+          }
+        };
+      }
+
+      function setSettings(nextSettings) {
+        settings = nextSettings;
+        websocket?.send(JSON.stringify({ event: "setSettings", action, context, payload: settings }));
+      }
+
+      function sendToPlugin(payload) {
+        websocket?.send(JSON.stringify({ event: "sendToPlugin", action, context, payload }));
+      }
+
+      slotInput.addEventListener("change", () => {
+        const slot = Number.parseInt(slotInput.value, 10);
+        if (Number.isInteger(slot) && slot > 0) {
+          setSettings({ slot });
+          sendToPlugin({ type: "getSlotDetails" });
+        }
+      });
+
+      titleOverrideInput.addEventListener("change", () => {
+        sendToPlugin({ type: "setTitleOverride", titleOverride: titleOverrideInput.value });
+      });
+    </script>
+  </body>
+</html>

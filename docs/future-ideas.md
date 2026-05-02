@@ -1,0 +1,134 @@
+# Ideen und Backlog
+
+Diese Datei sammelt Ideen aus dem Chat, ohne sie schon als beschlossenes Verhalten zu behandeln.
+
+## Idee 1: Doppelklick speichert aktuellen Tab und schliesst ihn
+
+Motivation:
+
+Carlos hat oft viele Chrome-Tabs offen.
+Ein Doppelklick auf einen leeren oder speziellen Slot koennte den aktuellen Tab speichern und direkt schliessen.
+
+Moegliches Verhalten:
+
+- Doppelklick auf leeren Slot:
+  - aktive Chrome-URL und Tab-Titel speichern
+  - Favicon laden
+  - Button aktualisieren
+  - gespeicherten Chrome-Tab schliessen
+- Doppelklick auf belegten Slot:
+  - noch offen zu klaeren
+
+Offene Produktfragen:
+
+- Soll Doppelklick nur bei leeren Slots wirken?
+- Was passiert bei belegten Slots?
+- Soll Schliessen rueckgaengig machbar sein?
+- Reicht ein `showAlert`, wenn Chrome nicht gelesen werden kann?
+
+Technische Notizen:
+
+- Stream Deck liefert KeyDown/KeyUp, aber keine direkte Double-Click-API.
+- Doppelklick muss selbst ueber Zeitfenster erkannt werden.
+- Konflikt mit normalem kurzem Druck beachten:
+  - Wenn erster Klick sofort speichert/oeffnet, ist es fuer Doppelklick zu spaet.
+  - Fuer Doppelklick muss kurzer Druck evtl. um ca. 250-350 ms verzoegert werden.
+- Tab-Schliessen per AppleScript ist moeglich, aber riskanter als nur Speichern.
+
+Empfohlener Ansatz:
+
+- Erst als optionale Einstellung planen.
+- Standardverhalten bleibt wie jetzt.
+- Double-Click-Zeitfenster z. B. 300 ms.
+- Nur leere Slots duerfen per Doppelklick speichern und schliessen.
+
+## Idee 2: Recherche-Sammlungen / Ordner
+
+Motivation:
+
+Carlos nutzt einen Stream-Deck-Ordner mit 14 Bookmark-Slots plus Zurueck-Taste.
+Gewuenscht ist ein schneller Weg, neue thematische Sammlungen wie `Recherche XYZ` anzulegen.
+
+Moegliche Interpretation:
+
+- Eine Taste legt eine neue Sammlung an.
+- Sammlung enthaelt wieder mehrere Slots.
+- Ziel: geordnet Links zu einem Thema ablegen.
+
+Wichtige technische Unsicherheit:
+
+- Es ist noch nicht geprueft, ob ein Stream-Deck-Plugin wirklich automatisch Stream-Deck-Ordner/Profile/Seiten anlegen oder veraendern darf.
+- Das Stream-Deck-SDK kann Actions steuern, aber UI-Strukturen wie Ordner sind vermutlich nur eingeschraenkt oder gar nicht programmatisch anlegbar.
+
+Moegliche Alternativen, falls echte Stream-Deck-Ordner nicht gehen:
+
+1. **Sammlungsmodus im Plugin**
+   - Jede Taste hat `collectionId` + `slot`.
+   - Eine Taste kann zwischen Sammlungen wechseln.
+   - Stream Deck bleibt auf derselben Seite, aber Slotinhalte wechseln.
+
+2. **Profil-/Seiten-Template manuell duplizieren**
+   - Plugin verwaltet Daten.
+   - Nutzer dupliziert Stream-Deck-Ordner manuell.
+   - Tasten zeigen je nach eingestellter Sammlung andere Slots.
+
+3. **Sammlungs-Navigation ueber Plugin-Tasten**
+   - Taste `Naechste Sammlung`.
+   - Taste `Vorherige Sammlung`.
+   - Slots 1-14 zeigen immer die aktuelle Sammlung.
+
+Offene Produktfragen:
+
+- Soll eine Sammlung einen Namen bekommen, z. B. `Koreanisch`, `Steuern`, `Recherche XYZ`?
+- Wie viele Slots pro Sammlung?
+- Soll Sammlung direkt auf dem Button sichtbar sein?
+- Soll es eine globale Startseite fuer Sammlungen geben?
+
+Empfohlener naechster Schritt:
+
+- Sammlungsmodus im Plugin planen.
+- Detaillierte Anforderungen liegen in `docs/collection-mode-requirements.md`.
+- Echte Stream-Deck-Ordner erst danach separat auf SDK-Machbarkeit pruefen.
+
+## Idee 3: Safari-Unterstuetzung
+
+Status:
+
+- In der Datenstruktur vorbereitet (`browser`).
+- Noch nicht gebaut.
+
+Warum einfacher als Firefox:
+
+- Safari ist auf macOS per AppleScript besser steuerbar als Firefox.
+
+Offene Fragen:
+
+- Pro Slot Browser speichern?
+- Globale Browser-Auswahl?
+- Beim Speichern erkennen, ob Chrome oder Safari vorn ist?
+
+## Idee 4: bessere Titel
+
+Aktuell:
+
+- erste 14 Zeichen des Tab-Titels
+- 7 oben, 7 unten
+
+Moegliche Verbesserungen:
+
+- kuerzere manuelle Titel schneller editieren
+- automatische sinnvolle Kuerzung
+- Domain optional klein anzeigen
+- Sammlungstitel oder Slotnummer optional anzeigen
+
+## Idee 5: Daten-Export und Backup
+
+Moegliches Ziel:
+
+- Button oder Script, das `bookmarks.json` sichert.
+- Import/Export fuer spaetere Migration.
+
+Aktuell:
+
+- JSON liegt gut lesbar unter `/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.json`.
+- Korrupte Top-Level-Dateien werden automatisch gesichert.
