@@ -33,8 +33,19 @@ export type BookmarkFile = {
 
 export type BookmarkStoreOptions = {
   dataDir: string;
+  exportDir?: string;
   now?: () => string;
   log?: (message: string) => void | Promise<void>;
+};
+
+export type BookmarkBackupResult = {
+  filePath: string;
+  fileName: string;
+};
+
+export type BookmarkExportResult = {
+  filePath: string;
+  fileName: string;
 };
 
 export type BookmarkStore = ReturnType<typeof createBookmarkStore>;
@@ -48,6 +59,7 @@ export function createBookmarkStore(options: BookmarkStoreOptions) {
   const now = options.now ?? (() => new Date().toISOString());
   const log = options.log ?? (() => undefined);
   const filePath = path.join(options.dataDir, "bookmarks.json");
+  const exportDir = options.exportDir ?? options.dataDir;
   let writeQueue = Promise.resolve();
 
   async function ensureDataDir(): Promise<void> {
@@ -80,8 +92,45 @@ export function createBookmarkStore(options: BookmarkStoreOptions) {
   async function save(store: BookmarkFile): Promise<void> {
     await ensureDataDir();
     const tempPath = `${filePath}.tmp`;
-    await writeFile(tempPath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
+    await writeFile(tempPath, formatStore(store), "utf8");
     await rename(tempPath, filePath);
+  }
+
+  async function backup(): Promise<BookmarkBackupResult> {
+    return withWriteLock(async () => backupCurrentStore());
+  }
+
+  async function exportJson(): Promise<string> {
+    return withWriteLock(async () => formatStore(await load()));
+  }
+
+  async function exportFile(): Promise<BookmarkExportResult> {
+    return withWriteLock(async () => {
+      const store = await load();
+      const baseName = `bookmarks.export-${safeTimestamp(now())}`;
+      await mkdir(exportDir, { recursive: true });
+      return writeUniqueStoreFile(exportDir, baseName, store);
+    });
+  }
+
+  async function importJson(jsonText: string): Promise<BookmarkBackupResult> {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (error) {
+      throw new Error(`Invalid bookmark import JSON: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    const normalized = normalizeBookmarkFileForImport(parsed);
+    if (!normalized) {
+      throw new Error("Unsupported bookmark import structure");
+    }
+
+    return withWriteLock(async () => {
+      const backupResult = await backupCurrentStore();
+      await save(normalized.store);
+      return backupResult;
+    });
   }
 
   async function getBookmark(slot: number): Promise<BookmarkSlot | undefined> {
@@ -126,6 +175,30 @@ export function createBookmarkStore(options: BookmarkStoreOptions) {
     });
   }
 
+  async function backupCurrentStore(): Promise<BookmarkBackupResult> {
+    return writeUniqueStoreFile(options.dataDir, `bookmarks.backup-${safeTimestamp(now())}`, await load());
+  }
+
+  async function writeUniqueStoreFile(outputDir: string, baseName: string, store: BookmarkFile): Promise<BookmarkBackupResult> {
+    for (let attempt = 1; attempt < 1000; attempt += 1) {
+      const fileName = attempt === 1 ? `${baseName}.json` : `${baseName}-${attempt}.json`;
+      const outputPath = path.join(outputDir, fileName);
+      try {
+        await writeFile(outputPath, formatStore(store), { encoding: "utf8", flag: "wx" });
+        return {
+          filePath: outputPath,
+          fileName
+        };
+      } catch (error) {
+        if (!isNodeError(error) || error.code !== "EEXIST") {
+          throw error;
+        }
+      }
+    }
+
+    throw new Error("Could not create unique bookmark file");
+  }
+
   async function backupCorruptFile(): Promise<void> {
     const backupPath = path.join(options.dataDir, `bookmarks.corrupt-${safeTimestamp(now())}.json`);
     try {
@@ -150,11 +223,19 @@ export function createBookmarkStore(options: BookmarkStoreOptions) {
     ensureDataDir,
     load,
     save,
+    backup,
+    exportJson,
+    exportFile,
+    importJson,
     getBookmark,
     setBookmark,
     updateBookmark,
     deleteBookmark
   };
+}
+
+function formatStore(store: BookmarkFile): string {
+  return `${JSON.stringify(store, null, 2)}\n`;
 }
 
 export function emptyStore(): BookmarkFile {
@@ -178,6 +259,24 @@ function normalizeBookmarkFile(value: unknown): { valid: boolean; store: Bookmar
   }
 
   return { valid: true, store: { version: 1, slots } };
+}
+
+function normalizeBookmarkFileForImport(value: unknown): { store: BookmarkFile } | undefined {
+  if (!isRecord(value) || value.version !== 1 || !isRecord(value.slots)) {
+    return undefined;
+  }
+
+  const slots: Record<string, BookmarkSlot> = {};
+  for (const [slotKey, slotValue] of Object.entries(value.slots)) {
+    const bookmark = normalizeBookmarkSlot(slotValue);
+    if (!bookmark || slotKey !== String(bookmark.slot)) {
+      return undefined;
+    }
+
+    slots[slotKey] = bookmark;
+  }
+
+  return { store: { version: 1, slots } };
 }
 
 function normalizeBookmarkSlot(value: unknown): BookmarkSlot | undefined {

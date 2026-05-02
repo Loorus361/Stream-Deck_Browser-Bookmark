@@ -123,10 +123,14 @@ Moegliche Verbesserungen:
 
 ## Idee 5: Daten-Export und Backup
 
-Moegliches Ziel:
+Status:
 
-- Button oder Script, das `bookmarks.json` sichert.
-- Import/Export fuer spaetere Migration.
+- Umgesetzt.
+- `Backup erstellen` schreibt `bookmarks.backup-<timestamp>.json` in den Plugin-Datenordner.
+- `Export in Downloads` schreibt `bookmarks.export-<timestamp>.json` in den macOS-Downloads-Ordner.
+- `Import auswaehlen` ersetzt alle gespeicherten Links durch eine ausgewaehlte JSON-Datei.
+- Import legt vorher automatisch ein Backup an.
+- Ungueltige Import-Dateien werden abgelehnt und ersetzen die bestehenden Daten nicht.
 
 Aktuell:
 

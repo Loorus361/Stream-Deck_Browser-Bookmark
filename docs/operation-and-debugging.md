@@ -47,6 +47,18 @@ Bookmark-Daten:
 /Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.json
 ```
 
+Manuelle Backups aus dem Einstellungsbereich werden im selben Ordner abgelegt:
+
+```text
+/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.backup-<timestamp>.json
+```
+
+Exporte aus dem Einstellungsbereich werden im Downloads-Ordner abgelegt:
+
+```text
+/Users/carlosanderssohn/Downloads/bookmarks.export-<timestamp>.json
+```
+
 Debug-Log:
 
 ```text
@@ -117,3 +129,13 @@ Das Log soll sparsam bleiben:
 - unerwarteter Fehler
 
 Keine vollstaendige Surf-Historie loggen.
+
+## Backup, Export und Import
+
+Der Einstellungsbereich jeder `Bookmark Slot`-Taste enthaelt einen Bereich `Alle Links`.
+
+- `Backup erstellen`: sichert alle gespeicherten Plugin-Links als Datei im Datenordner.
+- `Export in Downloads`: schreibt die aktuelle Bookmark-Datei als JSON in den Downloads-Ordner.
+- `Import auswaehlen`: ersetzt alle gespeicherten Plugin-Links durch eine ausgewaehlte JSON-Datei.
+
+Beim Import wird vorher automatisch ein Backup der aktuellen Daten angelegt. Ungueltige Import-Dateien werden abgelehnt und ersetzen die bestehende Datei nicht.

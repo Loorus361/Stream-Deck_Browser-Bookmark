@@ -56,6 +56,7 @@ Diese Datei:
 
 - erzeugt den Bookmark-Store
 - registriert `BookmarkSlotAction`
+- verarbeitet globale Backup-/Export-/Import-Befehle aus dem Einstellungsbereich
 - schreibt einen Start-Logeintrag
 - verbindet das Plugin mit Stream Deck
 
@@ -122,6 +123,20 @@ Wenn `bookmarks.json` korrupt ist oder eine falsche Top-Level-Struktur hat, wird
 ```text
 bookmarks.corrupt-<timestamp>.json
 ```
+
+Manuell ausgeloeste Backups werden im Datenordner geschrieben:
+
+```text
+/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.backup-<timestamp>.json
+```
+
+Exporte werden bewusst in den Downloads-Ordner geschrieben:
+
+```text
+/Users/carlosanderssohn/Downloads/bookmarks.export-<timestamp>.json
+```
+
+Vor jedem erfolgreichen Import wird automatisch ein Backup der bisherigen `bookmarks.json` erstellt. Import-Dateien muessen dem aktuellen JSON-Format entsprechen; ungueltige Dateien ersetzen die bestehenden Daten nicht.
 
 ## Chrome-Steuerung
 
@@ -193,12 +208,15 @@ Der Einstellungsbereich zeigt:
 - Slotnummer, editierbar
 - gespeicherte URL, nur Anzeige
 - Titel, editierbar als `titleOverride`
+- Bereich `Alle Links` mit Backup, Export und Import
 
 Wichtig:
 
 - Action-Settings speichern nur `slot`.
 - `titleOverride` wird im gemeinsamen JSON-Slot gespeichert.
 - Dadurch bleiben mehrere Tasten mit derselben Slotnummer identisch.
+- Backup, Export und Import betreffen alle Plugin-Links, nicht nur die aktuell gewaehlte Taste.
+- Die Befehle werden robust ueber Stream-Deck-Kontextnachrichten und globale Plugin-Einstellungen gesendet, weil sie globale Daten betreffen.
 
 ## Installation
 

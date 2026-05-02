@@ -7,6 +7,10 @@ Lokales Stream-Deck-Plugin fuer Chrome-Bookmark-Slots.
 - kurzer Druck: leeren Slot speichern oder gespeicherten Link oeffnen/fokussieren
 - 1 Sekunde halten: Slot loeschen
 - Einstellungen: Slotnummer, URL-Anzeige, Titel
+- Backup/Export/Import im Einstellungsbereich:
+  - Backup in `~/.streamdeck-bookmarks/`
+  - Export in `~/Downloads/`
+  - Import mit automatischem Backup vorher
 
 ## Installation
 

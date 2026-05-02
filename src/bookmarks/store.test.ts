@@ -72,3 +72,135 @@ test("valid JSON with unsupported structure is backed up", async () => {
   assert.deepEqual(await store.load(), { version: 1, slots: {} });
   assert.equal(logs.some((line) => line.includes("unsupported structure")), true);
 });
+
+test("backup creates a complete bookmark file copy", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-02T12:00:00.000Z" });
+
+  await store.setBookmark(exampleBookmark(1));
+
+  const backup = await store.backup();
+
+  assert.equal(backup.fileName, "bookmarks.backup-2026-05-02T12-00-00-000Z.json");
+  assert.equal(backup.filePath, path.join(dataDir, backup.fileName));
+  assert.deepEqual(JSON.parse(await readFile(backup.filePath, "utf8")), {
+    version: 1,
+    slots: {
+      "1": exampleBookmark(1)
+    }
+  });
+});
+
+test("backup writes an empty valid store when bookmark file is missing", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-02T12:00:00.000Z" });
+
+  const backup = await store.backup();
+
+  assert.deepEqual(JSON.parse(await readFile(backup.filePath, "utf8")), { version: 1, slots: {} });
+});
+
+test("backup does not overwrite an existing backup with the same timestamp", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-02T12:00:00.000Z" });
+
+  const first = await store.backup();
+  const second = await store.backup();
+
+  assert.equal(first.fileName, "bookmarks.backup-2026-05-02T12-00-00-000Z.json");
+  assert.equal(second.fileName, "bookmarks.backup-2026-05-02T12-00-00-000Z-2.json");
+});
+
+test("export returns normalized JSON without changing the bookmark file", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-02T12:00:00.000Z" });
+  const filePath = path.join(dataDir, "bookmarks.json");
+  const original = JSON.stringify({
+    version: 1,
+    slots: {
+      "1": exampleBookmark(1),
+      bad: { slot: "bad" }
+    }
+  });
+  await writeFile(filePath, original, "utf8");
+
+  const exported = await store.exportJson();
+
+  assert.equal(await readFile(filePath, "utf8"), original);
+  assert.equal(exported, `${JSON.stringify({
+    version: 1,
+    slots: {
+      "1": exampleBookmark(1)
+    }
+  }, null, 2)}\n`);
+});
+
+test("exportFile writes a complete export file without changing the bookmark file", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const exportDir = await mkdtemp(path.join(tmpdir(), "bookmark-export-"));
+  const store = createBookmarkStore({ dataDir, exportDir, now: () => "2026-05-02T12:00:00.000Z" });
+  await store.setBookmark(exampleBookmark(1));
+  const filePath = path.join(dataDir, "bookmarks.json");
+  const original = await readFile(filePath, "utf8");
+
+  const exported = await store.exportFile();
+
+  assert.equal(exported.fileName, "bookmarks.export-2026-05-02T12-00-00-000Z.json");
+  assert.equal(exported.filePath, path.join(exportDir, exported.fileName));
+  assert.equal(await readFile(filePath, "utf8"), original);
+  assert.deepEqual(JSON.parse(await readFile(exported.filePath, "utf8")), {
+    version: 1,
+    slots: {
+      "1": exampleBookmark(1)
+    }
+  });
+});
+
+test("import replaces the store after creating a backup", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-02T12:00:00.000Z" });
+  await store.setBookmark(exampleBookmark(1));
+
+  const backup = await store.importJson(JSON.stringify({
+    version: 1,
+    slots: {
+      "2": exampleBookmark(2)
+    }
+  }));
+
+  assert.equal(backup.fileName, "bookmarks.backup-2026-05-02T12-00-00-000Z.json");
+  assert.deepEqual(await store.load(), {
+    version: 1,
+    slots: {
+      "2": exampleBookmark(2)
+    }
+  });
+  assert.deepEqual(JSON.parse(await readFile(path.join(dataDir, "bookmarks.backup-2026-05-02T12-00-00-000Z.json"), "utf8")), {
+    version: 1,
+    slots: {
+      "1": exampleBookmark(1)
+    }
+  });
+});
+
+test("invalid import keeps the existing bookmark file unchanged", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-02T12:00:00.000Z" });
+  await store.setBookmark(exampleBookmark(1));
+  const filePath = path.join(dataDir, "bookmarks.json");
+  const original = await readFile(filePath, "utf8");
+
+  await assert.rejects(() => store.importJson("{not json"), /Invalid bookmark import JSON/);
+  assert.equal(await readFile(filePath, "utf8"), original);
+
+  await assert.rejects(() => store.importJson(JSON.stringify({ version: 2, slots: {} })), /Unsupported bookmark import structure/);
+  assert.equal(await readFile(filePath, "utf8"), original);
+
+  await assert.rejects(() => store.importJson(JSON.stringify({
+    version: 1,
+    slots: {
+      invalid: { slot: "invalid" }
+    }
+  })), /Unsupported bookmark import structure/);
+  assert.equal(await readFile(filePath, "utf8"), original);
+});

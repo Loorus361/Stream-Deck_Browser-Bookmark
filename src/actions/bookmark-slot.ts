@@ -13,6 +13,7 @@
 import streamDeck, {
   action,
   SingletonAction,
+  type Action,
   type DidReceiveSettingsEvent,
   type KeyAction,
   type KeyDownEvent,
@@ -27,7 +28,15 @@ import type { BookmarkStore, BookmarkSlot } from "../bookmarks/store.js";
 import { getActiveChromeTab, openOrFocusChromeUrl } from "../browser/chrome.js";
 import { createFaviconService } from "../favicon/favicon.js";
 import { logMessage } from "../logging/log.js";
-import { createSlotDetailsResponse, parsePropertyInspectorRequest } from "../property-inspector/messages.js";
+import {
+  createBackupCreatedResponse,
+  createBookmarkOperationFailedResponse,
+  createExportBookmarksResponse,
+  createImportCompletedResponse,
+  createSlotDetailsResponse,
+  parsePropertyInspectorRequest,
+  type PropertyInspectorResponse
+} from "../property-inspector/messages.js";
 import { renderEmptyButtonImage, renderFilledButtonImage } from "../render/button-image.js";
 import { chooseNextFreeSlot, normalizeSettings, type BookmarkSlotSettings } from "../settings/settings.js";
 
@@ -136,6 +145,42 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
       return;
     }
 
+    await logMessage(`Property inspector request: ${request.type}`);
+
+    if (request.type === "createBackup") {
+      try {
+        const backup = await this.store.backup();
+        await logMessage(`Backup created: ${backup.fileName}`);
+        await this.sendPropertyInspectorResponse(ev.action.id, createBackupCreatedResponse(backup.fileName));
+      } catch (error) {
+        await this.handleBookmarkOperationError(ev.action, error, "Backup failed");
+      }
+      return;
+    }
+
+    if (request.type === "exportBookmarks") {
+      try {
+        const exported = await this.store.exportFile();
+        await logMessage(`Bookmarks exported: ${exported.fileName}`);
+        await this.sendPropertyInspectorResponse(ev.action.id, createExportBookmarksResponse(exported.fileName));
+      } catch (error) {
+        await this.handleBookmarkOperationError(ev.action, error, "Export failed");
+      }
+      return;
+    }
+
+    if (request.type === "importBookmarks") {
+      try {
+        const backup = await this.store.importJson(request.json);
+        await this.refreshAllVisibleSlots();
+        await logMessage(`Bookmarks imported; previous data backed up as ${backup.fileName}`);
+        await this.sendPropertyInspectorResponse(ev.action.id, createImportCompletedResponse(backup.fileName));
+      } catch (error) {
+        await this.handleBookmarkOperationError(ev.action, error, "Import failed");
+      }
+      return;
+    }
+
     const settings = normalizeSettings(await ev.action.getSettings<BookmarkSlotSettings>());
     const slot = settings.slot;
     if (!slot) {
@@ -223,6 +268,11 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
     );
   }
 
+  async refreshAllVisibleSlots(): Promise<void> {
+    const slots = new Set([...this.visibleActions.values()].map((entry) => entry.slot));
+    await Promise.all([...slots].map((slot) => this.refreshSlot(slot)));
+  }
+
   private async sendSlotDetails(slot: number, actionId?: string): Promise<void> {
     if (actionId && streamDeck.ui.action?.id !== actionId) {
       return;
@@ -230,5 +280,20 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
 
     const bookmark = await this.store.getBookmark(slot);
     await streamDeck.ui.sendToPropertyInspector(createSlotDetailsResponse(slot, bookmark));
+  }
+
+  private async sendPropertyInspectorResponse(actionId: string, payload: PropertyInspectorResponse): Promise<void> {
+    if (streamDeck.ui.action?.id !== actionId) {
+      return;
+    }
+
+    await streamDeck.ui.sendToPropertyInspector(payload);
+  }
+
+  private async handleBookmarkOperationError(actionInstance: Action<BookmarkSlotSettings>, error: unknown, fallback: string): Promise<void> {
+    const message = error instanceof Error ? error.message : fallback;
+    await logMessage(`${fallback}: ${message}`, "error");
+    await this.sendPropertyInspectorResponse(actionInstance.id, createBookmarkOperationFailedResponse(message));
+    await actionInstance.showAlert();
   }
 }

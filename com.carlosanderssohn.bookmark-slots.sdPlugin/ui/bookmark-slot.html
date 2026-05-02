@@ -48,6 +48,33 @@
       input[readonly] {
         color: #bdbdbd;
       }
+
+      button {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #5a5a5a;
+        border-radius: 6px;
+        background: #2d2d2d;
+        color: #fff;
+        padding: 8px;
+        margin: 0 0 8px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      button:active {
+        background: #3a3a3a;
+      }
+
+      .section {
+        margin-top: 18px;
+      }
+
+      .status {
+        min-height: 18px;
+        color: #bdbdbd;
+        line-height: 1.35;
+      }
     </style>
   </head>
   <body>
@@ -66,27 +93,45 @@
       <input id="titleOverride" type="text" />
     </label>
 
+    <div class="section">
+      <span>Alle Links</span>
+      <button id="backup" type="button">Backup erstellen</button>
+      <button id="export" type="button">Export in Downloads</button>
+      <button id="import" type="button">Import auswählen</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden />
+      <div id="status" class="status"></div>
+    </div>
+
     <script>
       let websocket;
       let uuid;
+      let pluginUuid;
       let context;
       let action;
       let settings = {};
+      let pendingTimer;
 
       const slotInput = document.getElementById("slot");
       const urlInput = document.getElementById("url");
       const titleOverrideInput = document.getElementById("titleOverride");
+      const backupButton = document.getElementById("backup");
+      const exportButton = document.getElementById("export");
+      const importButton = document.getElementById("import");
+      const importFileInput = document.getElementById("importFile");
+      const status = document.getElementById("status");
 
       function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
         uuid = inPropertyInspectorUUID;
         const actionInfo = JSON.parse(inActionInfo);
+        const pluginInfo = JSON.parse(inInfo);
+        pluginUuid = pluginInfo.plugin?.uuid;
         context = actionInfo.context;
         action = actionInfo.action;
 
         websocket = new WebSocket(`ws://127.0.0.1:${inPort}`);
         websocket.onopen = () => {
           websocket.send(JSON.stringify({ event: inRegisterEvent, uuid }));
-          websocket.send(JSON.stringify({ event: "getSettings", action, context }));
+          sendContextualMessage("getSettings");
           sendToPlugin({ type: "getSlotDetails" });
         };
 
@@ -105,16 +150,81 @@
             urlInput.value = message.payload.url || "";
             titleOverrideInput.value = message.payload.titleOverride || message.payload.title || "";
           }
+
+          if (message.event === "sendToPropertyInspector" && message.payload?.type === "backupCreated") {
+            clearPending();
+            setStatus(`Backup erstellt: ${message.payload.fileName}`);
+          }
+
+          if (message.event === "sendToPropertyInspector" && message.payload?.type === "bookmarksExport") {
+            clearPending();
+            setStatus(`Export in Downloads: ${message.payload.fileName}`);
+          }
+
+          if (message.event === "sendToPropertyInspector" && message.payload?.type === "importCompleted") {
+            clearPending();
+            setStatus(`Import abgeschlossen. Backup: ${message.payload.backupFileName}`);
+            sendToPlugin({ type: "getSlotDetails" });
+          }
+
+          if (message.event === "sendToPropertyInspector" && message.payload?.type === "bookmarkOperationFailed") {
+            clearPending();
+            setStatus(message.payload.message || "Aktion fehlgeschlagen");
+          }
         };
       }
 
       function setSettings(nextSettings) {
         settings = nextSettings;
-        websocket?.send(JSON.stringify({ event: "setSettings", action, context, payload: settings }));
+        sendContextualMessage("setSettings", settings);
       }
 
       function sendToPlugin(payload) {
-        websocket?.send(JSON.stringify({ event: "sendToPlugin", action, context, payload }));
+        if (websocket?.readyState !== WebSocket.OPEN) {
+          setStatus("Stream-Deck-Verbindung ist noch nicht bereit");
+          return false;
+        }
+
+        sendContextualMessage("sendToPlugin", payload);
+        return true;
+      }
+
+      function sendGlobalCommand(payload) {
+        if (websocket?.readyState !== WebSocket.OPEN) {
+          setStatus("Stream-Deck-Verbindung ist noch nicht bereit");
+          return false;
+        }
+
+        if (!pluginUuid) {
+          setStatus("Plugin-ID fehlt. Stream Deck bitte neu starten.");
+          return false;
+        }
+
+        const commandPayload = {
+          bookmarkSlotsCommand: {
+            id: `${Date.now()}-${Math.random()}`,
+            ...payload
+          }
+        };
+        sendRawMessage("setGlobalSettings", pluginUuid, commandPayload);
+        sendRawMessage("setGlobalSettings", uuid, commandPayload);
+        return true;
+      }
+
+      function sendContextualMessage(event, payload) {
+        const contexts = Array.from(new Set([context, uuid].filter(Boolean)));
+        contexts.forEach((targetContext) => sendRawMessage(event, targetContext, payload));
+      }
+
+      function sendRawMessage(event, targetContext, payload) {
+        const message = { event, context: targetContext };
+        if (action) {
+          message.action = action;
+        }
+        if (payload !== undefined) {
+          message.payload = payload;
+        }
+        websocket.send(JSON.stringify(message));
       }
 
       slotInput.addEventListener("change", () => {
@@ -128,6 +238,62 @@
       titleOverrideInput.addEventListener("change", () => {
         sendToPlugin({ type: "setTitleOverride", titleOverride: titleOverrideInput.value });
       });
+
+      backupButton.addEventListener("click", () => {
+        if (sendGlobalCommand({ type: "createBackup" })) {
+          setPending("Backup wird erstellt...");
+        }
+      });
+
+      exportButton.addEventListener("click", () => {
+        if (sendGlobalCommand({ type: "exportBookmarks" })) {
+          setPending("Export wird vorbereitet...");
+        }
+      });
+
+      importButton.addEventListener("click", () => {
+        importFileInput.click();
+      });
+
+      importFileInput.addEventListener("change", async () => {
+        const file = importFileInput.files?.[0];
+        importFileInput.value = "";
+        if (!file) {
+          return;
+        }
+
+        if (!confirm("Import ersetzt alle gespeicherten Plugin-Links. Vorher wird automatisch ein Backup erstellt. Fortfahren?")) {
+          return;
+        }
+
+        try {
+          if (sendGlobalCommand({ type: "importBookmarks", json: await file.text() })) {
+            setPending("Import wird geprüft...");
+          }
+        } catch (error) {
+          setStatus(error instanceof Error ? error.message : "Datei konnte nicht gelesen werden");
+        }
+      });
+
+      function setStatus(message) {
+        status.textContent = message;
+      }
+
+      function setPending(message) {
+        clearPending();
+        setStatus(message);
+        pendingTimer = window.setTimeout(() => {
+          setStatus("Keine Antwort vom Plugin. Stream Deck bitte komplett neu starten.");
+        }, 7000);
+      }
+
+      function clearPending() {
+        if (pendingTimer) {
+          window.clearTimeout(pendingTimer);
+          pendingTimer = undefined;
+        }
+      }
+
     </script>
   </body>
 </html>
