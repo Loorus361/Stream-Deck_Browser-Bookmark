@@ -59,6 +59,29 @@ test("load keeps Safari bookmarks as valid slots", async () => {
   });
 });
 
+test("load keeps Firefox bookmarks as valid slots", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-03T12:00:00.000Z" });
+  const firefoxBookmark: BookmarkSlot = {
+    ...exampleBookmark(5),
+    browser: "firefox"
+  };
+
+  await writeFile(path.join(dataDir, "bookmarks.json"), JSON.stringify({
+    version: 1,
+    slots: {
+      "5": firefoxBookmark
+    }
+  }), "utf8");
+
+  assert.deepEqual(await store.load(), {
+    version: 1,
+    slots: {
+      "5": firefoxBookmark
+    }
+  });
+});
+
 test("corrupt JSON is backed up and replaced with an empty store", async () => {
   const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
   const logs: string[] = [];
@@ -225,6 +248,29 @@ test("import accepts Safari bookmarks", async () => {
     version: 1,
     slots: {
       "4": safariBookmark
+    }
+  });
+});
+
+test("import accepts Firefox bookmarks", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "bookmark-store-"));
+  const store = createBookmarkStore({ dataDir, now: () => "2026-05-03T12:00:00.000Z" });
+  const firefoxBookmark: BookmarkSlot = {
+    ...exampleBookmark(6),
+    browser: "firefox"
+  };
+
+  await store.importJson(JSON.stringify({
+    version: 1,
+    slots: {
+      "6": firefoxBookmark
+    }
+  }));
+
+  assert.deepEqual(await store.load(), {
+    version: 1,
+    slots: {
+      "6": firefoxBookmark
     }
   });
 });

@@ -1,6 +1,6 @@
 # Stream Deck Bookmark Plugin - Entscheidungen
 
-Stand: 2026-05-02
+Stand: 2026-05-03
 
 ## Ziel
 
@@ -27,10 +27,9 @@ Ein lokales, echtes Stream-Deck-Plugin fuer ein Stream Deck MK.2 mit dynamischen
 - Die Slotnummer kann im Einstellungsbereich manuell ueberschrieben werden.
 - Zwei Tasten mit gleicher Slotnummer zeigen und steuern denselben Bookmark.
 - Normaler Druck:
-  - leerer Slot: aktive URL und Tab-Titel aus dem vordersten Chrome-Fenster speichern.
-  - belegter Slot: gespeicherte URL in Chrome fokussieren, wenn schon offen; sonst in neuem Tab oeffnen.
-  - wenn Chrome beim Oeffnen eines belegten Slots geschlossen ist: Chrome starten und Link oeffnen.
-  - wenn Chrome beim Speichern eines leeren Slots geschlossen ist: nichts speichern, `showAlert` anzeigen.
+  - leerer Slot: aktive URL aus dem vordersten unterstuetzten Browser speichern.
+  - belegter Slot: gespeicherte URL im gespeicherten Browser oeffnen oder, bei Chrome/Safari, vorhandenen Tab fokussieren.
+  - wenn beim Speichern kein unterstuetzter Browser vorn ist: nichts speichern, `showAlert` anzeigen.
 - Langer Druck:
   - 1 Sekunde halten.
   - Loeschen erst beim Loslassen.
@@ -40,14 +39,13 @@ Ein lokales, echtes Stream-Deck-Plugin fuer ein Stream Deck MK.2 mit dynamischen
 
 ## Browser
 
-- v1 ist Chrome-only.
-- Datenstruktur soll spaeter Safari erlauben.
-- Firefox ist fuer dieses Plugin erstmal raus, weil macOS-Steuerung dort unzuverlaessiger waere.
-- Beim Speichern wird das vorderste Chrome-Fenster verwendet, auch wenn gerade eine andere App aktiv ist.
-- Nach dem Speichern wird kein Fokus zur vorherigen App zurueckgesetzt.
-- Beim Oeffnen/Fokussieren eines gespeicherten Links soll Chrome in den Vordergrund kommen.
-- Wenn dieselbe URL mehrfach offen ist, wird der erste gefundene Tab verwendet.
-- URL-Vergleich ist in v1 exakt.
+- Chrome und Safari werden voll unterstuetzt: speichern, oeffnen und vorhandenen Tab per exaktem URL-Vergleich fokussieren.
+- Firefox wird eingeschraenkt unterstuetzt: speichern und oeffnen, aber keine vorhandenen Firefox-Tabs suchen/fokussieren.
+- Firefox-Speichern nutzt `Cmd+L`, `Cmd+C` auf der Firefox-Adresszeile und stellt die vorherige Text-Zwischenablage wieder her.
+- Firefox braucht dafuer macOS-Bedienungshilfen-Rechte.
+- YouTube-URLs koennen global optional in Firefox geoeffnet werden.
+- Wenn dieselbe URL in Chrome/Safari mehrfach offen ist, wird der erste gefundene Tab verwendet.
+- URL-Vergleich ist exakt.
 
 ## Anzeige
 
@@ -57,7 +55,8 @@ Ein lokales, echtes Stream-Deck-Plugin fuer ein Stream Deck MK.2 mit dynamischen
 - Mitte: Website-Favicon.
 - Favicon: ca. 64x64 px, leicht abgerundete Ecken.
 - Titel:
-  - Tab-Titel aus Chrome verwenden.
+  - Tab-Titel aus Chrome/Safari verwenden.
+  - Firefox speichert als Titel erstmal die URL.
   - erste 14 Zeichen.
   - Zeichen 1-7 oben, Zeichen 8-14 unten.
   - wenn kuerzer als 8 Zeichen: oben kompletter Titel, unten leer.

@@ -11,6 +11,10 @@ test("parseFrontmostProcessOutput maps Safari bundle identifier to safari", () =
   assert.equal(parseFrontmostProcessOutput("com.apple.Safari\u001fSafari"), "safari");
 });
 
+test("parseFrontmostProcessOutput maps Firefox bundle identifier to firefox", () => {
+  assert.equal(parseFrontmostProcessOutput("org.mozilla.firefox\u001fFirefox"), "firefox");
+});
+
 test("parseFrontmostProcessOutput returns undefined for other frontmost apps", () => {
   assert.equal(parseFrontmostProcessOutput("com.apple.finder\u001fFinder"), undefined);
 });

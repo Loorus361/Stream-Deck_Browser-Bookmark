@@ -52,6 +52,7 @@ type VisibleAction = {
 
 type BookmarkSlotActionOptions = {
   store: BookmarkStore;
+  getOpenYouTubeInFirefox?: () => boolean;
 };
 
 @action({ UUID: ACTION_UUID })
@@ -60,6 +61,7 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
   private readonly pressedAt = new Map<string, number>();
   private readonly emptySlotClicks = new EmptySlotClickTracker(EMPTY_SLOT_DOUBLE_CLICK_MS);
   private readonly store: BookmarkStore;
+  private readonly getOpenYouTubeInFirefox: () => boolean;
   private readonly faviconService = createFaviconService({
     fallbackDataUrl: GENERIC_FALLBACK_ICON,
     log: (message) => logMessage(message, "error")
@@ -68,6 +70,7 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
   constructor(options: BookmarkSlotActionOptions) {
     super();
     this.store = options.store;
+    this.getOpenYouTubeInFirefox = options.getOpenYouTubeInFirefox ?? (() => false);
   }
 
   override async onWillAppear(ev: WillAppearEvent<BookmarkSlotSettings>): Promise<void> {
@@ -118,7 +121,10 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
       const bookmark = await this.store.getBookmark(slot);
       if (bookmark) {
         this.emptySlotClicks.cancel(ev.action.id);
-        await openOrFocusBookmarkUrl({ browser: bookmark.browser, url: bookmark.url });
+        await openOrFocusBookmarkUrl(
+          { browser: bookmark.browser, url: bookmark.url },
+          { openYouTubeInFirefox: this.getOpenYouTubeInFirefox() }
+        );
         return;
       }
 
@@ -273,6 +279,11 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
       await this.store.setBookmark(bookmark);
       await logMessage(`Slot ${slot} saved`);
       await this.refreshSlot(slot);
+
+      if (tab.browser === "firefox") {
+        await this.updateSavedBookmarkFavicon(slot, tab.url);
+        return;
+      }
 
       try {
         await closeActiveBookmarkTab({ browser: tab.browser, url: tab.url });

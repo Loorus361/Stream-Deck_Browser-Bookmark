@@ -49,6 +49,21 @@
         color: #bdbdbd;
       }
 
+      .checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .checkbox input {
+        width: auto;
+        margin: 0;
+      }
+
+      .checkbox span {
+        margin: 0;
+      }
+
       button {
         width: 100%;
         box-sizing: border-box;
@@ -95,6 +110,10 @@
 
     <div class="section">
       <span>Alle Links</span>
+      <label class="checkbox">
+        <input id="openYouTubeInFirefox" type="checkbox" />
+        <span>YouTube in Firefox öffnen</span>
+      </label>
       <button id="backup" type="button">Backup erstellen</button>
       <button id="export" type="button">Export in Downloads</button>
       <button id="import" type="button">Import auswählen</button>
@@ -109,11 +128,13 @@
       let context;
       let action;
       let settings = {};
+      let globalSettings = {};
       let pendingTimer;
 
       const slotInput = document.getElementById("slot");
       const urlInput = document.getElementById("url");
       const titleOverrideInput = document.getElementById("titleOverride");
+      const openYouTubeInFirefoxInput = document.getElementById("openYouTubeInFirefox");
       const backupButton = document.getElementById("backup");
       const exportButton = document.getElementById("export");
       const importButton = document.getElementById("import");
@@ -132,6 +153,7 @@
         websocket.onopen = () => {
           websocket.send(JSON.stringify({ event: inRegisterEvent, uuid }));
           sendContextualMessage("getSettings");
+          sendRawMessage("getGlobalSettings", pluginUuid || uuid);
           sendToPlugin({ type: "getSlotDetails" });
         };
 
@@ -143,6 +165,12 @@
               slotInput.value = String(settings.slot);
             }
             sendToPlugin({ type: "getSlotDetails" });
+          }
+
+          if (message.event === "didReceiveGlobalSettings") {
+            globalSettings = message.payload.settings || {};
+            openYouTubeInFirefoxInput.checked =
+              globalSettings.bookmarkSlotsPreferences?.openYouTubeInFirefox === true;
           }
 
           if (message.event === "sendToPropertyInspector" && message.payload?.type === "slotDetails") {
@@ -201,14 +229,44 @@
         }
 
         const commandPayload = {
+          ...withCurrentPreferences(globalSettings),
           bookmarkSlotsCommand: {
             id: `${Date.now()}-${Math.random()}`,
             ...payload
           }
         };
+        globalSettings = commandPayload;
         sendRawMessage("setGlobalSettings", pluginUuid, commandPayload);
         sendRawMessage("setGlobalSettings", uuid, commandPayload);
         return true;
+      }
+
+      function setGlobalPreferences() {
+        if (websocket?.readyState !== WebSocket.OPEN) {
+          setStatus("Stream-Deck-Verbindung ist noch nicht bereit");
+          return;
+        }
+
+        if (!pluginUuid) {
+          setStatus("Plugin-ID fehlt. Stream Deck bitte neu starten.");
+          return;
+        }
+
+        globalSettings = withCurrentPreferences(globalSettings);
+
+        sendRawMessage("setGlobalSettings", pluginUuid, globalSettings);
+        sendRawMessage("setGlobalSettings", uuid, globalSettings);
+      }
+
+      function withCurrentPreferences(sourceSettings) {
+        const { bookmarkSlotsCommand, ...restSettings } = sourceSettings || {};
+        return {
+          ...restSettings,
+          bookmarkSlotsPreferences: {
+            ...(restSettings.bookmarkSlotsPreferences || {}),
+            openYouTubeInFirefox: openYouTubeInFirefoxInput.checked
+          }
+        };
       }
 
       function sendContextualMessage(event, payload) {
@@ -237,6 +295,10 @@
 
       titleOverrideInput.addEventListener("change", () => {
         sendToPlugin({ type: "setTitleOverride", titleOverride: titleOverrideInput.value });
+      });
+
+      openYouTubeInFirefoxInput.addEventListener("change", () => {
+        setGlobalPreferences();
       });
 
       backupButton.addEventListener("click", () => {

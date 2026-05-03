@@ -116,6 +116,8 @@ Format:
 }
 ```
 
+`browser` kann `chrome`, `safari` oder `firefox` sein.
+
 Schreibzugriffe sind serialisiert. Das ist wichtig, weil mehrere Tasten fast gleichzeitig speichern oder loeschen koennen.
 
 Wenn `bookmarks.json` korrupt ist oder eine falsche Top-Level-Struktur hat, wird sie gesichert als:
@@ -144,19 +146,28 @@ Vor jedem erfolgreichen Import wird automatisch ein Backup der bisherigen `bookm
 src/browser/browser-router.ts
 src/browser/chrome.ts
 src/browser/safari.ts
+src/browser/firefox.ts
 src/browser/frontmost.ts
 ```
 
 Das Plugin nutzt `osascript` per `execFile`, nicht per Shell-String.
-Der Router erkennt, ob Chrome oder Safari vorn ist, und speichert diesen Browser pro Bookmark.
+Der Router erkennt, ob Chrome, Safari oder Firefox vorn ist, und speichert diesen Browser pro Bookmark.
 
 Funktionen:
 
 - `getActiveBrowserTab()`: liest URL, Tab-Titel und Browser aus dem vordersten unterstuetzten Browser.
-- `openOrFocusBookmarkUrl({ browser, url })`: sucht exakt dieselbe URL im gespeicherten Browser; wenn vorhanden, springt es zum ersten Treffer; sonst oeffnet es einen neuen Tab.
+- `openOrFocusBookmarkUrl({ browser, url })`: sucht exakt dieselbe URL in Chrome/Safari; wenn vorhanden, springt es zum ersten Treffer; sonst oeffnet es einen neuen Tab.
 
-Wenn beim Speichern weder Chrome noch Safari vorn ist, wird nichts gespeichert und Stream Deck zeigt `showAlert`.
-Beim Oeffnen nutzt der Slot den gespeicherten Browser. Bestehende Chrome-Bookmarks bleiben Chrome-Bookmarks.
+Firefox ist eingeschraenkt:
+
+- Beim Speichern wird die Firefox-Adresszeile automatisch per `Cmd+L`, `Cmd+C` kopiert.
+- Die vorherige Text-Zwischenablage wird danach wiederhergestellt.
+- Firefox-Bookmarks speichern als Titel erstmal die URL.
+- Beim Oeffnen in Firefox wird nur die URL geoeffnet; vorhandene Firefox-Tabs werden nicht gesucht oder fokussiert.
+- Firefox-Tabs werden bei Doppelklick nicht automatisch geschlossen.
+
+Wenn beim Speichern kein unterstuetzter Browser vorn ist, wird nichts gespeichert und Stream Deck zeigt `showAlert`.
+Beim Oeffnen nutzt der Slot den gespeicherten Browser. Optional koennen YouTube-URLs global nach Firefox umgeleitet werden.
 
 ## Buttonbild
 

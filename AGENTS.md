@@ -3,12 +3,12 @@
 ## Zweck dieses Repositories
 
 Dieses Repository enthaelt ein lokales Stream-Deck-Plugin fuer Carlos.
-Das Plugin heisst **Bookmark Slots** und macht Stream-Deck-Tasten zu dynamischen Chrome-Bookmark-Slots.
+Das Plugin heisst **Bookmark Slots** und macht Stream-Deck-Tasten zu dynamischen Browser-Bookmark-Slots.
 
 Der aktuelle Stand funktioniert bereits produktiv lokal:
 
 - Stream-Deck-Aktion: `Bookmark Slot`
-- kurzer Tastendruck auf leeren Slot: aktiven Chrome-Tab speichern
+- kurzer Tastendruck auf leeren Slot: aktiven Chrome-, Safari- oder Firefox-Tab speichern
 - kurzer Tastendruck auf belegten Slot: gespeicherte URL oeffnen oder vorhandenen Tab fokussieren
 - langer Tastendruck ab 1 Sekunde: Slot loeschen
 - Buttonbild wird dynamisch aus schwarzem Hintergrund, Favicon und 7+7 Zeichen Titel erzeugt
@@ -31,6 +31,8 @@ Wichtige Antwortregeln:
 - `src/actions/bookmark-slot.ts`: Hauptlogik der Stream-Deck-Taste.
 - `src/bookmarks/store.ts`: JSON-Speicherung und Schutz gegen Datenverlust.
 - `src/browser/chrome.ts`: AppleScript-Steuerung fuer Chrome.
+- `src/browser/safari.ts`: AppleScript-Steuerung fuer Safari.
+- `src/browser/firefox.ts`: eingeschraenkte Firefox-Steuerung per `Cmd+L`, `Cmd+C`.
 - `src/render/button-image.ts`: erzeugt das dynamische Button-SVG.
 - `src/favicon/favicon.ts`: laedt Favicons ueber Google-Favicon-Dienst oder nutzt Chrome-Fallback.
 - `com.carlosanderssohn.bookmark-slots.sdPlugin/manifest.json`: Stream-Deck-Manifest.
@@ -97,9 +99,9 @@ Diese Arbeitsweise hat beim initialen Plugin-Bau sehr gut funktioniert und soll 
 
 ## Aktuelle bekannte Einschraenkungen
 
-- v1 ist Chrome-only.
-- Firefox ist bewusst nicht geplant, weil macOS-Steuerung dort unzuverlaessiger ist.
-- Safari ist spaeter moeglich, aber noch nicht gebaut.
+- Chrome und Safari koennen bestehende Tabs suchen/fokussieren.
+- Firefox kann speichern und oeffnen, sucht/fokussiert aber keine bestehenden Tabs.
+- Firefox-Speichern nutzt `Cmd+L`, `Cmd+C` und braucht macOS-Bedienungshilfen-Rechte.
 - Favicons kommen aktuell ueber Google-Favicon-Dienst; interne URLs und localhost nutzen meist Chrome-Fallback.
 - Plugin legt keine Stream-Deck-Ordner automatisch an; das ist eine Zukunftsidee und muss erst auf SDK-Machbarkeit geprueft werden.
 - Sammlungsmodus ist als naechstes groesseres Feature dokumentiert in `docs/collection-mode-requirements.md`.

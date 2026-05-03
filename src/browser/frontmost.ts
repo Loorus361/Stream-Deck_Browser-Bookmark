@@ -5,7 +5,7 @@ const execFileAsync = promisify(execFile);
 const FRONTMOST_OUTPUT_DELIMITER = "\u001f";
 const APPLESCRIPT_TIMEOUT_MS = 5000;
 
-export type BrowserId = "chrome" | "safari";
+export type BrowserId = "chrome" | "safari" | "firefox";
 export type FrontmostRunner = (script: string, args?: string[]) => Promise<string>;
 
 export async function getFrontmostBrowser(runAppleScript: FrontmostRunner = runAppleScriptWithOsascript): Promise<BrowserId | undefined> {
@@ -33,6 +33,10 @@ export function parseFrontmostProcessOutput(output: string): BrowserId | undefin
 
   if (bundleIdentifier === "com.apple.Safari") {
     return "safari";
+  }
+
+  if (bundleIdentifier === "org.mozilla.firefox") {
+    return "firefox";
   }
 
   return undefined;

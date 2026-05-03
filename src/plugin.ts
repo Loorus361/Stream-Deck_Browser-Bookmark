@@ -23,14 +23,26 @@ const store = createBookmarkStore({
   exportDir: path.join(os.homedir(), "Downloads"),
   log: (message) => logMessage(message, "error")
 });
-const bookmarkAction = new BookmarkSlotAction({ store });
+let openYouTubeInFirefox = false;
+const bookmarkAction = new BookmarkSlotAction({
+  store,
+  getOpenYouTubeInFirefox: () => openYouTubeInFirefox
+});
 const handledGlobalCommandIds = new Set<string>();
 
+streamDeck.settings.useExperimentalMessageIdentifiers = true;
 streamDeck.actions.registerAction(bookmarkAction);
 
 streamDeck.settings.onDidReceiveGlobalSettings<BookmarkGlobalSettings>(async (ev) => {
+  applyGlobalSettings(ev.settings);
+
   const command = parseBookmarkGlobalCommand(ev.settings.bookmarkSlotsCommand);
-  if (!command || handledGlobalCommandIds.has(command.id)) {
+  if (!command) {
+    return;
+  }
+
+  if (handledGlobalCommandIds.has(command.id)) {
+    await clearStoredGlobalCommand(ev.settings);
     return;
   }
 
@@ -39,6 +51,7 @@ streamDeck.settings.onDidReceiveGlobalSettings<BookmarkGlobalSettings>(async (ev
     handledGlobalCommandIds.clear();
   }
 
+  await clearStoredGlobalCommand(ev.settings);
   await logMessage(`Global property inspector request: ${command.type}`);
 
   try {
@@ -69,9 +82,13 @@ streamDeck.settings.onDidReceiveGlobalSettings<BookmarkGlobalSettings>(async (ev
 
 await logMessage("Plugin started");
 await streamDeck.connect();
+applyGlobalSettings(await streamDeck.settings.getGlobalSettings<BookmarkGlobalSettings>());
 
 type BookmarkGlobalSettings = {
   bookmarkSlotsCommand?: BookmarkGlobalCommand;
+  bookmarkSlotsPreferences?: {
+    openYouTubeInFirefox?: boolean;
+  };
 };
 
 type BookmarkGlobalCommand =
@@ -97,6 +114,20 @@ function parseBookmarkGlobalCommand(value: unknown): BookmarkGlobalCommand | und
   }
 
   return undefined;
+}
+
+function applyGlobalSettings(settings: BookmarkGlobalSettings): void {
+  openYouTubeInFirefox = settings.bookmarkSlotsPreferences?.openYouTubeInFirefox === true;
+}
+
+async function clearStoredGlobalCommand(settings: BookmarkGlobalSettings): Promise<void> {
+  if (!settings.bookmarkSlotsCommand) {
+    return;
+  }
+
+  const nextSettings: BookmarkGlobalSettings = { ...settings };
+  delete nextSettings.bookmarkSlotsCommand;
+  await streamDeck.settings.setGlobalSettings(nextSettings);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

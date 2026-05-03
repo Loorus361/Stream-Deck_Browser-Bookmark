@@ -11,7 +11,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export type BrowserId = "chrome" | "safari";
+export type BrowserId = "chrome" | "safari" | "firefox";
 export type FaviconSource = "google" | "chrome";
 
 export type BookmarkSlot = {
@@ -299,7 +299,8 @@ function normalizeBookmarkSlot(value: unknown): BookmarkSlot | undefined {
     return undefined;
   }
 
-  const browser = value.browser === "safari" ? "safari" : value.browser === "chrome" ? "chrome" : undefined;
+  const browser =
+    value.browser === "safari" ? "safari" : value.browser === "chrome" ? "chrome" : value.browser === "firefox" ? "firefox" : undefined;
   const faviconSource = value.faviconSource === "google" ? "google" : value.faviconSource === "chrome" ? "chrome" : undefined;
   if (!browser || !faviconSource) {
     return undefined;
