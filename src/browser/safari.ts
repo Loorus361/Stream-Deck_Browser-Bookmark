@@ -69,6 +69,23 @@ end run
 `, [url]);
 }
 
+export async function closeActiveSafariTab(url: string, runAppleScript: SafariRunner = runAppleScriptWithOsascript): Promise<void> {
+  await runAppleScript(`
+on run argv
+  set targetUrl to item 1 of argv
+
+  tell application "Safari"
+    if (count of windows) is 0 then error "Safari hat kein geoeffnetes Fenster."
+
+    set activeUrl to URL of current tab of front window
+    if activeUrl is not targetUrl then error "Aktiver Safari-Tab hat sich geaendert."
+
+    close current tab of front window
+  end tell
+end run
+`, [url]);
+}
+
 export function parseSafariTabOutput(output: string): SafariTab {
   const trimmed = output.trimEnd();
   const delimiterIndex = trimmed.indexOf(SAFARI_OUTPUT_DELIMITER);

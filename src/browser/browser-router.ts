@@ -1,12 +1,8 @@
-import { getActiveChromeTab, openOrFocusChromeUrl, type ChromeTab } from "./chrome.js";
+import { closeActiveChromeTab, getActiveChromeTab, openOrFocusChromeUrl, type ChromeTab } from "./chrome.js";
 import { getFrontmostBrowser, type BrowserId } from "./frontmost.js";
-import { getActiveSafariTab, openOrFocusSafariUrl, type SafariTab } from "./safari.js";
+import { closeActiveSafariTab, getActiveSafariTab, openOrFocusSafariUrl, type SafariTab } from "./safari.js";
 
-export type ActiveBrowserTab = {
-  browser: BrowserId;
-  url: string;
-  title: string;
-};
+export type ActiveBrowserTab = ({ browser: "chrome" } & ChromeTab) | ({ browser: "safari" } & SafariTab);
 
 export type BookmarkUrlTarget = {
   browser: BrowserId;
@@ -22,6 +18,11 @@ export type BrowserRouterDependencies = {
 export type BrowserOpenDependencies = {
   openOrFocusChromeUrl?: (url: string) => Promise<void>;
   openOrFocusSafariUrl?: (url: string) => Promise<void>;
+};
+
+export type BrowserCloseDependencies = {
+  closeActiveChromeTab?: (url: string) => Promise<void>;
+  closeActiveSafariTab?: (url: string) => Promise<void>;
 };
 
 export async function getActiveBrowserTab(dependencies: BrowserRouterDependencies = {}): Promise<ActiveBrowserTab> {
@@ -47,4 +48,13 @@ export async function openOrFocusBookmarkUrl(target: BookmarkUrlTarget, dependen
   }
 
   await (dependencies.openOrFocusSafariUrl ?? openOrFocusSafariUrl)(target.url);
+}
+
+export async function closeActiveBookmarkTab(target: BookmarkUrlTarget, dependencies: BrowserCloseDependencies = {}): Promise<void> {
+  if (target.browser === "chrome") {
+    await (dependencies.closeActiveChromeTab ?? closeActiveChromeTab)(target.url);
+    return;
+  }
+
+  await (dependencies.closeActiveSafariTab ?? closeActiveSafariTab)(target.url);
 }

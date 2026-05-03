@@ -25,7 +25,7 @@ import streamDeck, {
 
 import { GENERIC_FALLBACK_ICON } from "../assets.js";
 import type { BookmarkStore, BookmarkSlot } from "../bookmarks/store.js";
-import { getActiveBrowserTab, openOrFocusBookmarkUrl } from "../browser/browser-router.js";
+import { closeActiveBookmarkTab, getActiveBrowserTab, openOrFocusBookmarkUrl } from "../browser/browser-router.js";
 import { createFaviconService } from "../favicon/favicon.js";
 import { logMessage } from "../logging/log.js";
 import {
@@ -39,9 +39,11 @@ import {
 } from "../property-inspector/messages.js";
 import { renderEmptyButtonImage, renderFilledButtonImage } from "../render/button-image.js";
 import { chooseNextFreeSlot, normalizeSettings, type BookmarkSlotSettings } from "../settings/settings.js";
+import { EmptySlotClickTracker } from "./empty-slot-clicks.js";
 
 const ACTION_UUID = "com.carlosanderssohn.bookmark-slots.bookmark-slot";
 const LONG_PRESS_MS = 1000;
+const EMPTY_SLOT_DOUBLE_CLICK_MS = 300;
 
 type VisibleAction = {
   slot: number;
@@ -56,6 +58,7 @@ type BookmarkSlotActionOptions = {
 export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
   private readonly visibleActions = new Map<string, VisibleAction>();
   private readonly pressedAt = new Map<string, number>();
+  private readonly emptySlotClicks = new EmptySlotClickTracker(EMPTY_SLOT_DOUBLE_CLICK_MS);
   private readonly store: BookmarkStore;
   private readonly faviconService = createFaviconService({
     fallbackDataUrl: GENERIC_FALLBACK_ICON,
@@ -81,6 +84,7 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
     const existing = this.visibleActions.get(ev.action.id);
     this.visibleActions.delete(ev.action.id);
     this.pressedAt.delete(ev.action.id);
+    this.emptySlotClicks.cancel(ev.action.id);
 
     if (existing) {
       void this.refreshSlot(existing.slot);
@@ -88,6 +92,7 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
   }
 
   override onKeyDown(ev: KeyDownEvent<BookmarkSlotSettings>): void {
+    this.emptySlotClicks.beginPress(ev.action.id);
     this.pressedAt.set(ev.action.id, Date.now());
   }
 
@@ -103,6 +108,7 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
 
     try {
       if (Date.now() - startedAt >= LONG_PRESS_MS) {
+        this.emptySlotClicks.cancel(ev.action.id);
         await this.store.deleteBookmark(slot);
         await logMessage(`Slot ${slot} deleted`);
         await this.refreshSlot(slot);
@@ -111,11 +117,18 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
 
       const bookmark = await this.store.getBookmark(slot);
       if (bookmark) {
+        this.emptySlotClicks.cancel(ev.action.id);
         await openOrFocusBookmarkUrl({ browser: bookmark.browser, url: bookmark.url });
         return;
       }
 
-      await this.saveActiveBrowserTab(slot);
+      const clickResult = this.emptySlotClicks.click(ev.action.id, () => {
+        void this.handleSingleEmptySlotClick(ev.action, slot);
+      });
+
+      if (clickResult === "doubleClick") {
+        await this.saveActiveBrowserTab(slot, { closeAfterSave: true });
+      }
     } catch (error) {
       await logMessage(`Slot ${slot} action failed: ${error instanceof Error ? error.message : String(error)}`, "error");
       await ev.action.showAlert();
@@ -227,10 +240,50 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
     return this.visibleActions.get(actionId)?.slot ?? normalizeSettings(rawSettings).slot;
   }
 
-  private async saveActiveBrowserTab(slot: number): Promise<void> {
+  private async handleSingleEmptySlotClick(actionInstance: KeyAction<BookmarkSlotSettings>, slot: number): Promise<void> {
+    try {
+      const bookmark = await this.store.getBookmark(slot);
+      if (bookmark) {
+        return;
+      }
+
+      await this.saveActiveBrowserTab(slot);
+    } catch (error) {
+      await logMessage(`Slot ${slot} delayed save failed: ${error instanceof Error ? error.message : String(error)}`, "error");
+      await actionInstance.showAlert();
+    }
+  }
+
+  private async saveActiveBrowserTab(slot: number, options: { closeAfterSave?: boolean } = {}): Promise<void> {
     const tab = await getActiveBrowserTab();
-    const favicon = await this.faviconService.fetchFavicon(tab.url);
     const now = new Date().toISOString();
+
+    if (options.closeAfterSave) {
+      const bookmark: BookmarkSlot = {
+        slot,
+        url: tab.url,
+        title: tab.title || tab.url,
+        browser: tab.browser,
+        faviconDataUrl: GENERIC_FALLBACK_ICON,
+        faviconSource: "chrome",
+        createdAt: now,
+        updatedAt: now
+      };
+
+      await this.store.setBookmark(bookmark);
+      await logMessage(`Slot ${slot} saved`);
+      await this.refreshSlot(slot);
+
+      try {
+        await closeActiveBookmarkTab({ browser: tab.browser, url: tab.url });
+        await logMessage(`Slot ${slot} source tab closed`);
+      } finally {
+        await this.updateSavedBookmarkFavicon(slot, tab.url);
+      }
+      return;
+    }
+
+    const favicon = await this.faviconService.fetchFavicon(tab.url);
 
     const bookmark: BookmarkSlot = {
       slot,
@@ -246,6 +299,26 @@ export class BookmarkSlotAction extends SingletonAction<BookmarkSlotSettings> {
     await this.store.setBookmark(bookmark);
     await logMessage(`Slot ${slot} saved`);
     await this.refreshSlot(slot);
+  }
+
+  private async updateSavedBookmarkFavicon(slot: number, url: string): Promise<void> {
+    const favicon = await this.faviconService.fetchFavicon(url);
+    const updated = await this.store.updateBookmark(slot, (bookmark) => {
+      if (bookmark.url !== url) {
+        return bookmark;
+      }
+
+      return {
+        ...bookmark,
+        faviconDataUrl: favicon.dataUrl,
+        faviconSource: favicon.source,
+        updatedAt: new Date().toISOString()
+      };
+    });
+
+    if (updated?.url === url) {
+      await this.refreshSlot(slot);
+    }
   }
 
   private async refreshSlot(slot: number): Promise<void> {

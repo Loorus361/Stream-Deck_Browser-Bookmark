@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { getActiveSafariTab, openOrFocusSafariUrl, parseSafariTabOutput } from "./safari.js";
+import { closeActiveSafariTab, getActiveSafariTab, openOrFocusSafariUrl, parseSafariTabOutput } from "./safari.js";
 
 test("parseSafariTabOutput separates URL and title with unit separator", () => {
   assert.deepEqual(parseSafariTabOutput("https://example.com/path\u001fExample title"), {
@@ -52,4 +52,21 @@ test("openOrFocusSafariUrl activates Safari, searches exact URLs, and receives t
   assert.match(capturedScript, /if \(URL of tab tabIndex of window windowIndex\) is targetUrl then/);
   assert.match(capturedScript, /set current tab of window windowIndex to tab tabIndex of window windowIndex/);
   assert.match(capturedScript, /make new tab with properties \{URL:targetUrl\}/);
+});
+
+test("closeActiveSafariTab closes the active tab only when its URL still matches", async () => {
+  let capturedScript = "";
+  let capturedArgs: string[] | undefined;
+
+  await closeActiveSafariTab("https://example.com/path?x=1", async (script, args) => {
+    capturedScript = script;
+    capturedArgs = args;
+    return "";
+  });
+
+  assert.deepEqual(capturedArgs, ["https://example.com/path?x=1"]);
+  assert.match(capturedScript, /set targetUrl to item 1 of argv/);
+  assert.match(capturedScript, /set activeUrl to URL of current tab of front window/);
+  assert.match(capturedScript, /if activeUrl is not targetUrl then error/);
+  assert.match(capturedScript, /close current tab of front window/);
 });

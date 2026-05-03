@@ -4,6 +4,13 @@ Diese Datei sammelt Ideen aus dem Chat, ohne sie schon als beschlossenes Verhalt
 
 ## Idee 1: Doppelklick speichert aktuellen Tab und schliesst ihn
 
+Status:
+
+- Umgesetzt fuer leere Slots.
+- Ein einzelner Klick speichert weiter den aktiven Tab.
+- Ein Doppelklick speichert den aktiven Tab und schliesst danach nur dann den Browser-Tab, wenn dessen URL noch zur gespeicherten URL passt.
+- Belegte Slots behalten ihr bisheriges Verhalten.
+
 Motivation:
 
 Carlos hat oft viele Browser-Tabs offen.
@@ -35,12 +42,11 @@ Technische Notizen:
   - Fuer Doppelklick muss kurzer Druck evtl. um ca. 250-350 ms verzoegert werden.
 - Tab-Schliessen per AppleScript ist moeglich, aber riskanter als nur Speichern.
 
-Empfohlener Ansatz:
+Technischer Ansatz:
 
-- Erst als optionale Einstellung planen.
-- Standardverhalten bleibt wie jetzt.
-- Double-Click-Zeitfenster z. B. 300 ms.
+- Double-Click-Zeitfenster: 300 ms.
 - Nur leere Slots duerfen per Doppelklick speichern und schliessen.
+- Der normale Einzelklick auf leere Slots wird deshalb um 300 ms verzoegert.
 
 ## Idee 2: Recherche-Sammlungen / Ordner
 

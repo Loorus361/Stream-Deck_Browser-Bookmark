@@ -72,6 +72,23 @@ end run
 `, [url]);
 }
 
+export async function closeActiveChromeTab(url: string, runAppleScript: ChromeRunner = runAppleScriptWithOsascript): Promise<void> {
+  await runAppleScript(`
+on run argv
+  set targetUrl to item 1 of argv
+
+  tell application "Google Chrome"
+    if (count of windows) is 0 then error "Google Chrome hat kein geoeffnetes Fenster."
+
+    set activeUrl to URL of active tab of front window
+    if activeUrl is not targetUrl then error "Aktiver Chrome-Tab hat sich geaendert."
+
+    close active tab of front window
+  end tell
+end run
+`, [url]);
+}
+
 export function parseChromeTabOutput(output: string): ChromeTab {
   const trimmed = output.trimEnd();
   const delimiterIndex = trimmed.indexOf(CHROME_OUTPUT_DELIMITER);

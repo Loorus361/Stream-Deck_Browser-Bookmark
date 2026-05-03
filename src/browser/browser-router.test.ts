@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { getActiveBrowserTab, openOrFocusBookmarkUrl } from "./browser-router.js";
+import { closeActiveBookmarkTab, getActiveBrowserTab, openOrFocusBookmarkUrl } from "./browser-router.js";
 
 test("getActiveBrowserTab returns the active Chrome tab when Chrome is frontmost", async () => {
   const tab = await getActiveBrowserTab({
@@ -67,6 +67,42 @@ test("openOrFocusBookmarkUrl routes Safari bookmarks to Safari", async () => {
         calls.push(`chrome:${url}`);
       },
       openOrFocusSafariUrl: async (url) => {
+        calls.push(`safari:${url}`);
+      }
+    }
+  );
+
+  assert.deepEqual(calls, ["safari:https://example.com"]);
+});
+
+test("closeActiveBookmarkTab routes Chrome URLs to Chrome", async () => {
+  const calls: string[] = [];
+
+  await closeActiveBookmarkTab(
+    { browser: "chrome", url: "https://example.com" },
+    {
+      closeActiveChromeTab: async (url) => {
+        calls.push(`chrome:${url}`);
+      },
+      closeActiveSafariTab: async (url) => {
+        calls.push(`safari:${url}`);
+      }
+    }
+  );
+
+  assert.deepEqual(calls, ["chrome:https://example.com"]);
+});
+
+test("closeActiveBookmarkTab routes Safari URLs to Safari", async () => {
+  const calls: string[] = [];
+
+  await closeActiveBookmarkTab(
+    { browser: "safari", url: "https://example.com" },
+    {
+      closeActiveChromeTab: async (url) => {
+        calls.push(`chrome:${url}`);
+      },
+      closeActiveSafariTab: async (url) => {
         calls.push(`safari:${url}`);
       }
     }
