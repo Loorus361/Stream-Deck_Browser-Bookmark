@@ -2,7 +2,7 @@
  * JSON persistence for bookmark slots.
  *
  * Production file:
- * /Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.json
+ * ~/.streamdeck-bookmarks/bookmarks.json
  *
  * This module serializes write operations to avoid losing data when two
  * Stream Deck keys save/delete/update close together. Corrupt top-level JSON

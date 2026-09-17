@@ -92,7 +92,7 @@ src/bookmarks/store.ts
 Produktivdaten:
 
 ```text
-/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.json
+~/.streamdeck-bookmarks/bookmarks.json
 ```
 
 Format:
@@ -129,13 +129,13 @@ bookmarks.corrupt-<timestamp>.json
 Manuell ausgeloeste Backups werden im Datenordner geschrieben:
 
 ```text
-/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.backup-<timestamp>.json
+~/.streamdeck-bookmarks/bookmarks.backup-<timestamp>.json
 ```
 
 Exporte werden bewusst in den Downloads-Ordner geschrieben:
 
 ```text
-/Users/carlosanderssohn/Downloads/bookmarks.export-<timestamp>.json
+~/Downloads/bookmarks.export-<timestamp>.json
 ```
 
 Vor jedem erfolgreichen Import wird automatisch ein Backup der bisherigen `bookmarks.json` erstellt. Import-Dateien muessen dem aktuellen JSON-Format entsprechen; ungueltige Dateien ersetzen die bestehenden Daten nicht.
@@ -246,7 +246,7 @@ Das Script:
 3. kopiert es nach:
 
 ```text
-/Users/carlosanderssohn/Library/Application Support/com.elgato.StreamDeck/Plugins/
+~/Library/Application Support/com.elgato.StreamDeck/Plugins/
 ```
 
 4. startet Stream Deck nicht automatisch neu

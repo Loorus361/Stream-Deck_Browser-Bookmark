@@ -59,31 +59,31 @@ Hinweis: Fuer Firefox-Speichern braucht Stream Deck bzw. das Plugin macOS-Bedien
 Plugin-Installation:
 
 ```text
-/Users/carlosanderssohn/Library/Application Support/com.elgato.StreamDeck/Plugins/com.carlosanderssohn.bookmark-slots.sdPlugin
+~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.carlosanderssohn.bookmark-slots.sdPlugin
 ```
 
 Bookmark-Daten:
 
 ```text
-/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.json
+~/.streamdeck-bookmarks/bookmarks.json
 ```
 
 Manuelle Backups aus dem Einstellungsbereich werden im selben Ordner abgelegt:
 
 ```text
-/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.backup-<timestamp>.json
+~/.streamdeck-bookmarks/bookmarks.backup-<timestamp>.json
 ```
 
 Exporte aus dem Einstellungsbereich werden im Downloads-Ordner abgelegt:
 
 ```text
-/Users/carlosanderssohn/Downloads/bookmarks.export-<timestamp>.json
+~/Downloads/bookmarks.export-<timestamp>.json
 ```
 
 Debug-Log:
 
 ```text
-/Users/carlosanderssohn/.streamdeck-bookmarks/plugin.log
+~/.streamdeck-bookmarks/plugin.log
 ```
 
 ## Typische Fehlerbilder
@@ -120,7 +120,7 @@ Wahrscheinliche Ursachen:
 Pruefen:
 
 ```text
-/Users/carlosanderssohn/.streamdeck-bookmarks/plugin.log
+~/.streamdeck-bookmarks/plugin.log
 ```
 
 ### Oeffnen springt nicht zum erwarteten Tab

@@ -190,5 +190,5 @@ Status:
 
 Aktuell:
 
-- JSON liegt gut lesbar unter `/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.json`.
+- JSON liegt gut lesbar unter `~/.streamdeck-bookmarks/bookmarks.json`.
 - Korrupte Top-Level-Dateien werden automatisch gesichert.

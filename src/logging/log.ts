@@ -1,7 +1,7 @@
 /**
  * Sparse plugin logging.
  *
- * Logs are written to /Users/carlosanderssohn/.streamdeck-bookmarks/plugin.log.
+ * Logs are written to ~/.streamdeck-bookmarks/plugin.log.
  * Logging must never interrupt button behavior, so write failures are ignored.
  */
 import { appendFile, mkdir } from "node:fs/promises";

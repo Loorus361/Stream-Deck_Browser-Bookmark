@@ -12,7 +12,7 @@ Ein lokales, echtes Stream-Deck-Plugin fuer ein Stream Deck MK.2 mit dynamischen
 - Aktion `Bookmark Slot` kann auf Stream-Deck-Tasten gelegt werden.
 - Speichern, Oeffnen/Fokussieren und Loeschen per langem Druck funktionieren.
 - Die lokale Installation liegt unter:
-  - `/Users/carlosanderssohn/Library/Application Support/com.elgato.StreamDeck/Plugins/com.carlosanderssohn.bookmark-slots.sdPlugin`
+  - `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.carlosanderssohn.bookmark-slots.sdPlugin`
 - Einstieg fuer neue KI-Chats:
   - `AGENTS.md`
   - `docs/architecture.md`
@@ -81,9 +81,9 @@ Ein lokales, echtes Stream-Deck-Plugin fuer ein Stream Deck MK.2 mit dynamischen
 ## Speicherung
 
 - JSON-Datei:
-  - `/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.json`
+  - `~/.streamdeck-bookmarks/bookmarks.json`
 - Debug-Log:
-  - `/Users/carlosanderssohn/.streamdeck-bookmarks/plugin.log`
+  - `~/.streamdeck-bookmarks/plugin.log`
 - Keine Migration aus dem alten Script-MVP.
 - Slots speichern intern `createdAt` und `updatedAt`.
 - Keine feste maximale Slotnummer.
@@ -91,7 +91,7 @@ Ein lokales, echtes Stream-Deck-Plugin fuer ein Stream Deck MK.2 mit dynamischen
 - Gespeicherte Slots bleiben erhalten, wenn eine Taste entfernt wird; keine automatische Loeschung.
 - Keine automatische Bereinigung verwaister Slots in v1.
 - Installierter Script-MVP-Ordner wurde auf Wunsch bereits geloescht:
-  - `/Users/carlosanderssohn/Scripts/streamdeck-bookmarks`
+  - `~/Scripts/streamdeck-bookmarks`
 - Alte Script-MVP-Dateien im Projektordner wurden ebenfalls geloescht:
   - `streamdeck-bookmark.sh`
   - `streamdeck-clear-bookmark.sh`
@@ -107,9 +107,9 @@ Ein lokales, echtes Stream-Deck-Plugin fuer ein Stream Deck MK.2 mit dynamischen
 
 - Lokales Plugin, keine Veroeffentlichung.
 - Projekt im Ordner:
-  - `/Users/carlosanderssohn/Documents/Stream-Deck_Browser-Bookmark`
+  - `~/Documents/Stream-Deck_Browser-Bookmark`
 - Lokale Installation spaeter nach:
-  - `/Users/carlosanderssohn/Library/Application Support/com.elgato.StreamDeck/Plugins/`
+  - `~/Library/Application Support/com.elgato.StreamDeck/Plugins/`
 - Node.js/JavaScript ist okay.
 - TypeScript ist bevorzugt.
 - Offizielle Elgato-Node-Bibliothek darf installiert werden.

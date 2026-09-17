@@ -12,7 +12,7 @@ Der aktuelle Stand funktioniert bereits produktiv lokal:
 - kurzer Tastendruck auf belegten Slot: gespeicherte URL oeffnen oder vorhandenen Tab fokussieren
 - langer Tastendruck ab 1 Sekunde: Slot loeschen
 - Buttonbild wird dynamisch aus schwarzem Hintergrund, Favicon und 7+7 Zeichen Titel erzeugt
-- Daten liegen unter `/Users/carlosanderssohn/.streamdeck-bookmarks/bookmarks.json`
+- Daten liegen unter `~/.streamdeck-bookmarks/bookmarks.json`
 
 ## Nutzerkontext
 
